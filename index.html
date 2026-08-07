@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>英単語フラッシュカードアプリ</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            color: #333;
+        }
+        h1 {
+            font-size: 1.4rem;
+            margin-bottom: 15px;
+        }
+        .setup-container, .card-container, .result-container {
+            background-color: #fff;
+            padding: 25px;
+            border-radius: 14px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            width: 380px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .setup-group {
+            width: 100%;
+            margin-bottom: 15px;
+            text-align: left;
+        }
+        .setup-group label {
+            font-size: 0.85rem;
+            font-weight: bold;
+            color: #555;
+            display: block;
+            margin-bottom: 5px;
+        }
+        select, button {
+            width: 100%;
+            padding: 10px 12px;
+            font-size: 1rem;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            background-color: #fff;
+            cursor: pointer;
+            box-sizing: border-box;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+        .btn-start {
+            background-color: #1a73e8;
+            color: white;
+            border: none;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        .status-bar {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 15px;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+        }
+        .card {
+            width: 100%;
+            min-height: 230px;
+            background-color: #fafafa;
+            border: 2px dashed #dadce0;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            text-align: center;
+            padding: 25px 20px;
+            box-sizing: border-box;
+            position: relative;
+            user-select: none;
+            transition: background-color 0.15s;
+        }
+        .card:hover {
+            background-color: #f1f3f4;
+        }
+        .card.flipped {
+            border-color: #34a853;
+            background-color: #f6fdf8;
+        }
+        .card-section-tag {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 0.75rem;
+            background-color: #e8f0fe;
+            color: #1a73e8;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .card-content {
+            font-size: 1.8rem;
+            color: #202124;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+        .card.flipped .card-content {
+            font-size: 1.2rem;
+            color: #137333;
+            margin-bottom: 8px;
+        }
+        .card-example {
+            font-size: 0.85rem;
+            color: #555;
+            margin-top: 8px;
+            line-height: 1.3;
+            display: none;
+        }
+        .card.flipped .card-example {
+            display: block;
+        }
+        .card-hint {
+            position: absolute;
+            bottom: 8px;
+            font-size: 0.75rem;
+            color: #888;
+        }
+        .action-container {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+            width: 100%;
+        }
+        .action-container button {
+            flex: 1;
+            padding: 12px 5px;
+            font-weight: bold;
+            border: none;
+            color: white;
+            border-radius: 6px;
+        }
+        .btn-unlearned { background-color: #ea4335; }
+        .btn-review { background-color: #fbbc04; color: #333 !important; }
+        .btn-learned { background-color: #34a853; }
+        
+        .sub-actions {
+            margin-top: 10px;
+            display: flex;
+            gap: 10px;
+            width: 100%;
+        }
+        .sub-actions button {
+            background-color: #f1f3f4;
+            color: #5f6368;
+            border: 1px solid #dadce0;
+            font-size: 0.85rem;
+        }
+        
+        .result-container {
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+        .result-summary {
+            font-size: 1.1rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        .result-list {
+            width: 100%;
+            text-align: left;
+            margin-bottom: 20px;
+            border-top: 1px solid #eee;
+        }
+        .result-item {
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+        }
+        .badge-review {
+            background-color: #fef3d6;
+            color: #b06000;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+        .badge-learned {
+            background-color: #e6f4ea;
+            color: #137333;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>英単語フラッシュカード</h1>
+
+    <!-- 1. セットアップ画面 -->
+    <div class="setup-container" id="setupView">
+        <div class="setup-group">
+            <label>セクションを選択</label>
+            <select id="sectionSelect"></select>
+        </div>
+        <div class="setup-group">
+            <label>出題モード</label>
+            <select id="modeSelect">
+                <option value="unlearned" selected>「まだ」の単語のみ</option>
+                <option value="all">すべての単語</option>
+            </select>
+        </div>
+        <button class="btn-start" onclick="startSession()">スタート</button>
+    </div>
+
+    <!-- 2. カード学習画面 -->
+    <div class="card-container" id="cardView" style="display: none;">
+        <div class="status-bar">
+            <span id="statusBar">残り: 0枚</span>
+        </div>
+
+        <div class="card" id="flashcard" onclick="toggleCard()">
+            <span class="card-section-tag" id="cardSection">-</span>
+            <div>
+                <div class="card-content" id="cardText">読み込み中...</div>
+                <div class="card-example" id="cardExample"></div>
+            </div>
+            <div class="card-hint">クリックして意味を表示</div>
+        </div>
+
+        <div class="action-container">
+            <button class="btn-unlearned" onclick="answerCard('unlearned')">まだ</button>
+            <button class="btn-review" onclick="answerCard('review')">⭐︎ 要復習</button>
+            <button class="btn-learned" onclick="answerCard('learned')">覚えた</button>
+        </div>
+
+        <div class="sub-actions">
+            <button onclick="speakWord()">🔊 発音</button>
+            <button onclick="backToSetup()">設定に戻る</button>
+        </div>
+    </div>
+
+    <!-- 3. リザルト画面 -->
+    <div class="result-container" id="resultView" style="display: none;">
+        <div class="result-summary" id="resultSummary">1周お疲れ様でした！ 🎉</div>
+        <div class="result-list" id="resultList"></div>
+        <button class="btn-start" onclick="backToSetup()">メニューに戻る</button>
+    </div>
+
+    <!-- 外部の単語データを読み込む -->
+    <script src="words.js"></script>
+
+    <script>
+        let learnedStatus = {};
+        let currentDeck = [];
+        let sessionResults = [];
+        let currentIndex = 0;
+        let isFlipped = false;
+
+        function initSetup() {
+            loadStatus();
+            const selectEl = document.getElementById("sectionSelect");
+            selectEl.innerHTML = "";
+
+            if (typeof wordList === 'undefined') return;
+
+            const sections = [];
+            wordList.forEach(item => {
+                if (!sections.includes(item.section)) {
+                    sections.push(item.section);
+                }
+            });
+            sections.sort();
+
+            const allOpt = document.createElement("option");
+            allOpt.value = "all";
+            allOpt.textContent = `すべて (${sections.length}セクション)`;
+            selectEl.appendChild(allOpt);
+
+            sections.forEach(sec => {
+                const opt = document.createElement("option");
+                opt.value = sec;
+                opt.textContent = `Level ${sec}`;
+                selectEl.appendChild(opt);
+            });
+        }
+
+        function loadStatus() {
+            const saved = localStorage.getItem('wordLearnedStatus');
+            if (saved) {
+                try { learnedStatus = JSON.parse(saved); } catch (e) { learnedStatus = {}; }
+            } else {
+                learnedStatus = {};
+            }
+            if (typeof wordList !== 'undefined') {
+                wordList.forEach((_, i) => {
+                    if (learnedStatus[i] === undefined) learnedStatus[i] = false;
+                });
+            }
+        }
+
+        function saveStatus() {
+            localStorage.setItem('wordLearnedStatus', JSON.stringify(learnedStatus));
+        }
+
+        function startSession() {
+            if (typeof wordList === 'undefined') return;
+
+            const selectedSection = document.getElementById("sectionSelect").value;
+            const selectedMode = document.getElementById("modeSelect").value;
+
+            currentDeck = [];
+            sessionResults = [];
+
+            wordList.forEach((item, index) => {
+                const matchSection = (selectedSection === "all" || item.section === selectedSection);
+                const matchMode = (selectedMode === "all" || !learnedStatus[index]);
+
+                if (matchSection && matchMode) {
+                    currentDeck.push(index);
+                }
+            });
+
+            if (currentDeck.length === 0) {
+                alert("条件に一致する「まだ」の単語がありません！");
+                return;
+            }
+
+            for (let i = currentDeck.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [currentDeck[i], currentDeck[j]] = [currentDeck[j], currentDeck[i]];
+            }
+
+            currentIndex = 0;
+
+            document.getElementById("setupView").style.display = "none";
+            document.getElementById("resultView").style.display = "none";
+            document.getElementById("cardView").style.display = "flex";
+
+            showCard();
+        }
+
+        function showCard() {
+            if (currentIndex >= currentDeck.length) {
+                showResult();
+                return;
+            }
+
+            isFlipped = false;
+            const cardEl = document.getElementById("flashcard");
+            const textEl = document.getElementById("cardText");
+            const exampleEl = document.getElementById("cardExample");
+            const sectionEl = document.getElementById("cardSection");
+            const statusEl = document.getElementById("statusBar");
+
+            cardEl.classList.remove("flipped");
+
+            const originalIndex = currentDeck[currentIndex];
+            const item = wordList[originalIndex];
+
+            textEl.textContent = item.en;
+            exampleEl.innerHTML = "";
+            sectionEl.textContent = item.section;
+            statusEl.textContent = `進捗: ${currentIndex + 1} / ${currentDeck.length} 枚目`;
+        }
+
+    function toggleCard() {
+            const cardEl = document.getElementById("flashcard");
+            const textEl = document.getElementById("cardText");
+            const exampleEl = document.getElementById("cardExample");
+            const originalIndex = currentDeck[currentIndex];
+            const item = wordList[originalIndex];
+
+            if (!isFlipped) {
+                textEl.textContent = item.ja;
+                exampleEl.innerHTML = `<strong>Ex:</strong> ${item.ex}<br><span style="color:#666;">(${item.exJa})</span>`;
+                cardEl.classList.add("flipped");
+                isFlipped = true;
+            } else {
+                textEl.textContent = item.en;
+                exampleEl.innerHTML = "";
+                cardEl.classList.remove("flipped");
+                isFlipped = false;
+            }
+        }
+
+        function answerCard(status) {
+            const originalIndex = currentDeck[currentIndex];
+            const item = wordList[originalIndex];
+
+            if (status === 'learned') {
+                learnedStatus[originalIndex] = true;
+                sessionResults.push({ item: item, status: 'learned' });
+            } else if (status === 'review') {
+                learnedStatus[originalIndex] = false;
+                sessionResults.push({ item: item, status: 'review' });
+            } else {
+                learnedStatus[originalIndex] = false;
+                sessionResults.push({ item: item, status: 'unlearned' });
+            }
+            saveStatus();
+
+            currentIndex++;
+            showCard();
+        }
+
+        function showResult() {
+            document.getElementById("cardView").style.display = "none";
+            const resultView = document.getElementById("resultView");
+            const listEl = document.getElementById("resultList");
+            const summaryEl = document.getElementById("resultSummary");
+
+            resultView.style.display = "flex";
+
+            const learnedCount = sessionResults.filter(r => r.status === 'learned').length;
+            const reviewCount = sessionResults.filter(r => r.status === 'review').length;
+            const unlearnedCount = sessionResults.filter(r => r.status === 'unlearned').length;
+
+            summaryEl.innerHTML = `1周お疲れ様でした！ 🎉<br>` +
+                `<span style="font-size:0.9rem; color:#555; font-weight:normal;">` +
+                `覚えた: ${learnedCount} / 要復習: ${reviewCount} / まだ: ${unlearnedCount}` +
+                `</span>`;
+
+            listEl.innerHTML = "";
+            sessionResults.forEach(res => {
+                const div = document.createElement("div");
+                div.className = "result-item";
+
+                let badgeHtml = "";
+                if (res.status === 'learned') {
+                    badgeHtml = `<span class="badge-learned">覚えた</span>`;
+                } else if (res.status === 'review') {
+                    badgeHtml = `<span class="badge-review">⭐︎ 要復習</span>`;
+                } else {
+                    badgeHtml = `<span style="color:#ea4335; font-size:0.75rem; font-weight:bold;">まだ</span>`;
+                }
+
+                div.innerHTML = `<div><strong>${res.item.en}</strong> <span style="color:#666; font-size:0.8rem;">(${res.item.ja})</span></div><div>${badgeHtml}</div>`;
+                listEl.appendChild(div);
+            });
+        }
+
+        function backToSetup() {
+            document.getElementById("cardView").style.display = "none";
+            document.getElementById("resultView").style.display = "none";
+            document.getElementById("setupView").style.display = "flex";
+            initSetup();
+        }
+
+        function speakWord() {
+            if (currentIndex >= currentDeck.length) return;
+            const originalIndex = currentDeck[currentIndex];
+            const item = wordList[originalIndex];
+
+            const cleanText = item.en.replace(/[～~()（）]/g, '').trim();
+            const utterance = new SpeechSynthesisUtterance(cleanText);
+            utterance.lang = 'en-US';
+            utterance.rate = 0.9;
+
+            const voices = window.speechSynthesis.getVoices();
+            const englishVoice = voices.find(voice => voice.lang === 'en-US' || voice.lang === 'en_US');
+            if (englishVoice) {
+                utterance.voice = englishVoice;
+            }
+            speechSynthesis.speak(utterance);
+        }
+
+        window.onload = function() {
+            initSetup();
+        };
+    </script>
+</body>
+</html>
