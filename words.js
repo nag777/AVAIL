@@ -502,7 +502,7 @@ const wordList = [
     { section: "3-11", en: "complement", ja: "補完する、引き立てる、補足", ex: "Wine complements the meal well.", exJa: "ワインが料理の味を引き立てる。" },
     { section: "3-11", en: "inspection", ja: "検査、査察", ex: "The factory undergoes safety inspections.", exJa: "その工場は安全検査を受けている。" },
     { section: "3-11", en: "dwell", ja: "住む、居住する", ex: "They dwell in a remote village.", exJa: "彼らは人里離れた村に住んでいる。" },
-    { section: "3-11", en: "livelihood", ja: "生計、暮らし",, ex: "Fishing is their main livelihood.", exJa: "漁業が彼らの主な生計の手段だ。" },
+    { section: "3-11", en: "livelihood", ja: "生計、暮らし", ex: "Fishing is their main livelihood.", exJa: "漁業が彼らの主な生計の手段だ。" },
     { section: "3-11", en: "snatch", ja: "ひったくる、奪い取る", ex: "A thief tried to snatch her bag.", exJa: "泥棒が彼女のバッグをひったくろうとした。" },
     { section: "3-11", en: "exploit", ja: "開発する、搾取する、功績", ex: "Companies exploit natural resources.", exJa: "企業は天然資源を開発（あるいは搾取）する。" },
     { section: "3-11", en: "drowsy", ja: "眠気のする、眠い", ex: "This medicine makes me drowsy.", exJa: "この薬を飲むと眠気がする。" },
