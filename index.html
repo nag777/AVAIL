@@ -260,8 +260,8 @@
         <button class="btn-start" onclick="backToSetup()">メニューに戻る</button>
     </div>
 
-    <!-- 外部の単語データを読み込む -->
-    <script src="words.js"></script>
+    <!-- 外部の単語データを読み込む（キャッシュ防止のバージョン付き） -->
+    <script src="words.js?v=2"></script>
 
     <script>
         let learnedStatus = {};
@@ -275,11 +275,14 @@
             const selectEl = document.getElementById("sectionSelect");
             selectEl.innerHTML = "";
 
-            if (typeof wordList === 'undefined') return;
+            if (typeof wordList === 'undefined' || !Array.isArray(wordList)) {
+                console.error("wordList が正しく読み込まれていません");
+                return;
+            }
 
             const sections = [];
             wordList.forEach(item => {
-                if (!sections.includes(item.section)) {
+                if (item && item.section && !sections.includes(item.section)) {
                     sections.push(item.section);
                 }
             });
@@ -287,13 +290,14 @@
 
             const allOpt = document.createElement("option");
             allOpt.value = "all";
-            allOpt.textContent = `すべて (${sections.length}セクション)`;
+            allOpt.textContent = `すべて (${wordList.length}単語)`;
             selectEl.appendChild(allOpt);
 
             sections.forEach(sec => {
+                const count = wordList.filter(item => item.section === sec).length;
                 const opt = document.createElement("option");
                 opt.value = sec;
-                opt.textContent = `Level ${sec}`;
+                opt.textContent = `Level ${sec} (${count}枚)`;
                 selectEl.appendChild(opt);
             });
         }
@@ -305,7 +309,7 @@
             } else {
                 learnedStatus = {};
             }
-            if (typeof wordList !== 'undefined') {
+            if (typeof wordList !== 'undefined' && Array.isArray(wordList)) {
                 wordList.forEach((_, i) => {
                     if (learnedStatus[i] === undefined) learnedStatus[i] = false;
                 });
@@ -317,7 +321,10 @@
         }
 
         function startSession() {
-            if (typeof wordList === 'undefined') return;
+            if (typeof wordList === 'undefined' || !Array.isArray(wordList)) {
+                alert("単語データが読み込まれていません。");
+                return;
+            }
 
             const selectedSection = document.getElementById("sectionSelect").value;
             const selectedMode = document.getElementById("modeSelect").value;
@@ -335,7 +342,7 @@
             });
 
             if (currentDeck.length === 0) {
-                alert("条件に一致する「まだ」の単語がありません！");
+                alert("条件に一致する単語がありません！（すべて「覚えた」になっている場合は、モードを「すべての単語」にするか、進捗をリセットしてください）");
                 return;
             }
 
@@ -377,7 +384,7 @@
             statusEl.textContent = `進捗: ${currentIndex + 1} / ${currentDeck.length} 枚目`;
         }
 
-    function toggleCard() {
+        function toggleCard() {
             const cardEl = document.getElementById("flashcard");
             const textEl = document.getElementById("cardText");
             const exampleEl = document.getElementById("cardExample");
