@@ -2,6 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>英単語フラッシュカードアプリ</title>
     <style>
         body {
@@ -16,15 +17,16 @@
             color: #333;
         }
         h1 {
-            font-size: 1.4rem;
+            font-size: 1.5rem;
             margin-bottom: 15px;
         }
         .setup-container, .card-container, .result-container {
             background-color: #fff;
-            padding: 25px;
+            padding: 25px 20px;
             border-radius: 14px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            width: 380px;
+            width: 90%;
+            max-width: 400px;
             box-sizing: border-box;
             display: flex;
             flex-direction: column;
@@ -36,7 +38,7 @@
             text-align: left;
         }
         .setup-group label {
-            font-size: 0.85rem;
+            font-size: 0.9rem;
             font-weight: bold;
             color: #555;
             display: block;
@@ -44,9 +46,9 @@
         }
         select, button {
             width: 100%;
-            padding: 10px 12px;
-            font-size: 1rem;
-            border-radius: 6px;
+            padding: 12px;
+            font-size: 1.05rem;
+            border-radius: 8px;
             border: 1px solid #ccc;
             background-color: #fff;
             cursor: pointer;
@@ -63,7 +65,7 @@
             margin-top: 10px;
         }
         .status-bar {
-            font-size: 0.9rem;
+            font-size: 0.95rem;
             color: #666;
             margin-bottom: 15px;
             width: 100%;
@@ -72,7 +74,7 @@
         }
         .card {
             width: 100%;
-            min-height: 230px;
+            min-height: 250px;
             background-color: #fafafa;
             border: 2px dashed #dadce0;
             border-radius: 10px;
@@ -82,7 +84,7 @@
             justify-content: center;
             cursor: pointer;
             text-align: center;
-            padding: 25px 20px;
+            padding: 25px 15px;
             box-sizing: border-box;
             position: relative;
             user-select: none;
@@ -99,29 +101,29 @@
             position: absolute;
             top: 10px;
             left: 10px;
-            font-size: 0.75rem;
+            font-size: 0.8rem;
             background-color: #e8f0fe;
             color: #1a73e8;
-            padding: 2px 6px;
+            padding: 3px 8px;
             border-radius: 4px;
             font-weight: bold;
         }
         .card-content {
-            font-size: 1.8rem;
+            font-size: 2rem;
             color: #202124;
             font-weight: bold;
             margin-top: 5px;
         }
         .card.flipped .card-content {
-            font-size: 1.2rem;
+            font-size: 1.3rem;
             color: #137333;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
         }
         .card-example {
-            font-size: 0.85rem;
-            color: #555;
-            margin-top: 8px;
-            line-height: 1.3;
+            font-size: 0.95rem;
+            color: #444;
+            margin-top: 10px;
+            line-height: 1.4;
             display: none;
         }
         .card.flipped .card-example {
@@ -129,8 +131,8 @@
         }
         .card-hint {
             position: absolute;
-            bottom: 8px;
-            font-size: 0.75rem;
+            bottom: 10px;
+            font-size: 0.8rem;
             color: #888;
         }
         .action-container {
@@ -141,18 +143,19 @@
         }
         .action-container button {
             flex: 1;
-            padding: 12px 5px;
+            padding: 14px 5px;
             font-weight: bold;
             border: none;
             color: white;
-            border-radius: 6px;
+            border-radius: 8px;
+            font-size: 1rem;
         }
         .btn-unlearned { background-color: #ea4335; }
         .btn-review { background-color: #fbbc04; color: #333 !important; }
         .btn-learned { background-color: #34a853; }
         
         .sub-actions {
-            margin-top: 10px;
+            margin-top: 12px;
             display: flex;
             gap: 10px;
             width: 100%;
@@ -161,7 +164,8 @@
             background-color: #f1f3f4;
             color: #5f6368;
             border: 1px solid #dadce0;
-            font-size: 0.85rem;
+            font-size: 0.9rem;
+            padding: 10px;
         }
         
         .result-container {
@@ -181,27 +185,27 @@
             border-top: 1px solid #eee;
         }
         .result-item {
-            padding: 10px 0;
+            padding: 12px 0;
             border-bottom: 1px solid #eee;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            font-size: 0.9rem;
+            font-size: 0.95rem;
         }
         .badge-review {
             background-color: #fef3d6;
             color: #b06000;
-            padding: 2px 6px;
+            padding: 3px 8px;
             border-radius: 4px;
-            font-size: 0.75rem;
+            font-size: 0.8rem;
             font-weight: bold;
         }
         .badge-learned {
             background-color: #e6f4ea;
             color: #137333;
-            padding: 2px 6px;
+            padding: 3px 8px;
             border-radius: 4px;
-            font-size: 0.75rem;
+            font-size: 0.8rem;
             font-weight: bold;
         }
     </style>
@@ -239,7 +243,7 @@
                 <div class="card-content" id="cardText">読み込み中...</div>
                 <div class="card-example" id="cardExample"></div>
             </div>
-            <div class="card-hint">クリックして意味を表示</div>
+            <div class="card-hint">タップして意味を表示</div>
         </div>
 
         <div class="action-container">
@@ -266,7 +270,7 @@
 
     <script>
         let learnedStatus = {};
-        let reviewStatus = {}; // 要復習を管理するステータス
+        let reviewStatus = {};
         let currentDeck = [];
         let sessionResults = [];
         let currentIndex = 0;
@@ -345,9 +349,9 @@
                 if (selectedMode === "all") {
                     matchMode = true;
                 } else if (selectedMode === "unlearned") {
-                    matchMode = !learnedStatus[index]; // 「まだ」の単語
+                    matchMode = !learnedStatus[index];
                 } else if (selectedMode === "review_unlearned") {
-                    matchMode = !learnedStatus[index] || reviewStatus[index]; // 「まだ」または「要復習」
+                    matchMode = !learnedStatus[index] || reviewStatus[index];
                 }
 
                 if (matchSection && matchMode) {
@@ -424,11 +428,11 @@
 
             if (status === 'learned') {
                 learnedStatus[originalIndex] = true;
-                reviewStatus[originalIndex] = false; // 覚えたら要復習を解除
+                reviewStatus[originalIndex] = false;
                 sessionResults.push({ item: item, status: 'learned' });
             } else if (status === 'review') {
                 learnedStatus[originalIndex] = false;
-                reviewStatus[originalIndex] = true; // 要復習フラグをオン
+                reviewStatus[originalIndex] = true;
                 sessionResults.push({ item: item, status: 'review' });
             } else {
                 learnedStatus[originalIndex] = false;
@@ -472,7 +476,7 @@
                     badgeHtml = `<span style="color:#ea4335; font-size:0.75rem; font-weight:bold;">まだ</span>`;
                 }
 
-                div.innerHTML = `<div><strong>${res.item.en}</strong> <span style="color:#666; font-size:0.8rem;">(${res.item.ja})</span></div><div>${badgeHtml}</div>`;
+                div.innerHTML = `<div><strong>${res.item.en}</strong> <span style="color:#666; font-size:0.85rem;">(${res.item.ja})</span></div><div>${badgeHtml}</div>`;
                 listEl.appendChild(div);
             });
         }
