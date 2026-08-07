@@ -220,6 +220,7 @@
             <label>出題モード</label>
             <select id="modeSelect">
                 <option value="unlearned" selected>「まだ」の単語のみ</option>
+                <option value="review_unlearned">「まだ」＋「要復習」</option>
                 <option value="all">すべての単語</option>
             </select>
         </div>
@@ -260,11 +261,12 @@
         <button class="btn-start" onclick="backToSetup()">メニューに戻る</button>
     </div>
 
-    <!-- 外部の単語データを読み込む（キャッシュ防止のバージョン付き） -->
-    <script src="words.js?v=2"></script>
+    <!-- 外部の単語データを読み込む -->
+    <script src="words.js"></script>
 
     <script>
         let learnedStatus = {};
+        let reviewStatus = {}; // 要復習を管理するステータス
         let currentDeck = [];
         let sessionResults = [];
         let currentIndex = 0;
@@ -275,14 +277,11 @@
             const selectEl = document.getElementById("sectionSelect");
             selectEl.innerHTML = "";
 
-            if (typeof wordList === 'undefined' || !Array.isArray(wordList)) {
-                console.error("wordList が正しく読み込まれていません");
-                return;
-            }
+            if (typeof wordList === 'undefined') return;
 
             const sections = [];
             wordList.forEach(item => {
-                if (item && item.section && !sections.includes(item.section)) {
+                if (!sections.includes(item.section)) {
                     sections.push(item.section);
                 }
             });
@@ -290,41 +289,48 @@
 
             const allOpt = document.createElement("option");
             allOpt.value = "all";
-            allOpt.textContent = `すべて (${wordList.length}単語)`;
+            allOpt.textContent = `すべて (${sections.length}セクション)`;
             selectEl.appendChild(allOpt);
 
             sections.forEach(sec => {
-                const count = wordList.filter(item => item.section === sec).length;
                 const opt = document.createElement("option");
                 opt.value = sec;
-                opt.textContent = `Level ${sec} (${count}枚)`;
+                opt.textContent = `Level ${sec}`;
                 selectEl.appendChild(opt);
             });
         }
 
         function loadStatus() {
-            const saved = localStorage.getItem('wordLearnedStatus');
-            if (saved) {
-                try { learnedStatus = JSON.parse(saved); } catch (e) { learnedStatus = {}; }
+            const savedLearned = localStorage.getItem('wordLearnedStatus');
+            const savedReview = localStorage.getItem('wordReviewStatus');
+            
+            if (savedLearned) {
+                try { learnedStatus = JSON.parse(savedLearned); } catch (e) { learnedStatus = {}; }
             } else {
                 learnedStatus = {};
             }
-            if (typeof wordList !== 'undefined' && Array.isArray(wordList)) {
+
+            if (savedReview) {
+                try { reviewStatus = JSON.parse(savedReview); } catch (e) { reviewStatus = {}; }
+            } else {
+                reviewStatus = {};
+            }
+
+            if (typeof wordList !== 'undefined') {
                 wordList.forEach((_, i) => {
                     if (learnedStatus[i] === undefined) learnedStatus[i] = false;
+                    if (reviewStatus[i] === undefined) reviewStatus[i] = false;
                 });
             }
         }
 
         function saveStatus() {
             localStorage.setItem('wordLearnedStatus', JSON.stringify(learnedStatus));
+            localStorage.setItem('wordReviewStatus', JSON.stringify(reviewStatus));
         }
 
         function startSession() {
-            if (typeof wordList === 'undefined' || !Array.isArray(wordList)) {
-                alert("単語データが読み込まれていません。");
-                return;
-            }
+            if (typeof wordList === 'undefined') return;
 
             const selectedSection = document.getElementById("sectionSelect").value;
             const selectedMode = document.getElementById("modeSelect").value;
@@ -334,7 +340,15 @@
 
             wordList.forEach((item, index) => {
                 const matchSection = (selectedSection === "all" || item.section === selectedSection);
-                const matchMode = (selectedMode === "all" || !learnedStatus[index]);
+                let matchMode = false;
+
+                if (selectedMode === "all") {
+                    matchMode = true;
+                } else if (selectedMode === "unlearned") {
+                    matchMode = !learnedStatus[index]; // 「まだ」の単語
+                } else if (selectedMode === "review_unlearned") {
+                    matchMode = !learnedStatus[index] || reviewStatus[index]; // 「まだ」または「要復習」
+                }
 
                 if (matchSection && matchMode) {
                     currentDeck.push(index);
@@ -342,7 +356,7 @@
             });
 
             if (currentDeck.length === 0) {
-                alert("条件に一致する単語がありません！（すべて「覚えた」になっている場合は、モードを「すべての単語」にするか、進捗をリセットしてください）");
+                alert("条件に一致する単語がありません！");
                 return;
             }
 
@@ -410,12 +424,15 @@
 
             if (status === 'learned') {
                 learnedStatus[originalIndex] = true;
+                reviewStatus[originalIndex] = false; // 覚えたら要復習を解除
                 sessionResults.push({ item: item, status: 'learned' });
             } else if (status === 'review') {
                 learnedStatus[originalIndex] = false;
+                reviewStatus[originalIndex] = true; // 要復習フラグをオン
                 sessionResults.push({ item: item, status: 'review' });
             } else {
                 learnedStatus[originalIndex] = false;
+                reviewStatus[originalIndex] = false;
                 sessionResults.push({ item: item, status: 'unlearned' });
             }
             saveStatus();
