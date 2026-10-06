@@ -576,11 +576,43 @@
         }
 
         function resetData() {
-            if (confirm("すべての学習ステータスをリセットしますか？（この操作は元に戻せません）")) {
-                localStorage.removeItem('wordLearnedStatus');
-                localStorage.removeItem('wordReviewStatus');
-                alert("リセットしました。");
-                initSetup(); // 画面を再初期化
+            const selectedLevel = document.getElementById("levelSelect").value;
+            const selectedSection = document.getElementById("sectionSelect").value;
+            
+            let targetName = "";
+            if (selectedLevel === "all") {
+                targetName = "すべての単語";
+            } else if (selectedSection === "all_in_level") {
+                targetName = `レベル ${selectedLevel} のすべて`;
+            } else {
+                targetName = `セクション ${selectedSection}`;
+            }
+        
+            if (confirm(`【${targetName}】の学習ステータスをリセットしますか？`)) {
+                if (typeof wordList !== 'undefined') {
+                    wordList.forEach((item, index) => {
+                        const secStr = String(item.section);
+                        const itemLvl = secStr.includes("-") ? secStr.split("-")[0] : secStr;
+        
+                        let matchTarget = false;
+                        if (selectedLevel === "all") {
+                            matchTarget = true;
+                        } else if (selectedSection === "all_in_level") {
+                            matchTarget = (itemLvl === selectedLevel);
+                        } else {
+                            matchTarget = (secStr === selectedSection);
+                        }
+        
+                        // 該当する単語のステータスだけ初期化する
+                        if (matchTarget) {
+                            learnedStatus[index] = false;
+                            reviewStatus[index] = false;
+                        }
+                    });
+                    saveStatus(); // 変更を保存
+                    alert(`${targetName} の学習データをリセットしました。`);
+                    initSetup();
+                }
             }
         }
 
