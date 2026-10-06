@@ -568,4 +568,15 @@
 
             const voices = window.speechSynthesis.getVoices();
             const englishVoice = voices.find(voice => voice.lang === 'en-US' || voice.lang === 'en_US');
-            if (englishVoice
+            if (englishVoice) {
+                utterance.voice = englishVoice;
+            }
+            speechSynthesis.speak(utterance);
+        }
+
+        window.onload = function() {
+            initSetup();
+        };
+    </script>
+</body>
+</html>
