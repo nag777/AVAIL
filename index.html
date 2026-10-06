@@ -233,6 +233,7 @@
             </select>
         </div>
         <button class="btn-start" onclick="startSession()">スタート</button>
+        <button onclick="resetData()" style="background-color: #7f8c8d; color: white; border: none; font-weight: bold; margin-top: 10px;">学習データをリセット</button>
     </div>
 
     <!-- 2. カード学習画面 -->
@@ -572,6 +573,15 @@
                 utterance.voice = englishVoice;
             }
             speechSynthesis.speak(utterance);
+        }
+
+        function resetData() {
+            if (confirm("すべての学習ステータスをリセットしますか？（この操作は元に戻せません）")) {
+                localStorage.removeItem('wordLearnedStatus');
+                localStorage.removeItem('wordReviewStatus');
+                alert("リセットしました。");
+                initSetup(); // 画面を再初期化
+            }
         }
 
         window.onload = function() {
