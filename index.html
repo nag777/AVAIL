@@ -217,6 +217,10 @@
     <!-- 1. セットアップ画面 -->
     <div class="setup-container" id="setupView">
         <div class="setup-group">
+            <label>レベルを選択</label>
+            <select id="levelSelect" onchange="onLevelChange()"></select>
+        </div>
+        <div class="setup-group">
             <label>セクションを選択</label>
             <select id="sectionSelect"></select>
         </div>
@@ -278,29 +282,89 @@
 
         function initSetup() {
             loadStatus();
-            const selectEl = document.getElementById("sectionSelect");
-            selectEl.innerHTML = "";
+            const levelSelectEl = document.getElementById("levelSelect");
+            levelSelectEl.innerHTML = "";
 
             if (typeof wordList === 'undefined') return;
 
-            const sections = [];
+            // レベルを抽出 (例: "1-1" なら "1" を抽出、あるいはそのままの形式に対応)
+            // ここではセクション名が "1-1" のように "ハイフン" や "数字" を含むと仮定して、先頭の数字をレベルとして扱います
+            const levels = [];
             wordList.forEach(item => {
-                if (!sections.includes(item.section)) {
-                    sections.push(item.section);
+                const secStr = String(item.section);
+                // "1-1" のような形式であれば最初の文字、あるいはそのまま
+                const lvl = secStr.includes("-") ? secStr.split("-")[0] : secStr;
+                if (!levels.includes(lvl)) {
+                    levels.includes(lvl) || levels.push(lvl);
                 }
             });
-            sections.sort();
 
+            levels.sort((a, b) => {
+                return (isNaN(a) || isNaN(b)) ? String(a).localeCompare(String(b)) : Number(a) - Number(b);
+            });
+
+            // 「すべて」の選択肢
             const allOpt = document.createElement("option");
             allOpt.value = "all";
-            allOpt.textContent = `すべて (${sections.length}セクション)`;
-            selectEl.appendChild(allOpt);
+            allOpt.textContent = `すべてのレベル (${wordList.length}語)`;
+            levelSelectEl.appendChild(allOpt);
+
+            levels.forEach(lvl => {
+                const count = wordList.filter(item => {
+                    const secStr = String(item.section);
+                    const itemLvl = secStr.includes("-") ? secStr.split("-")[0] : secStr;
+                    return itemLvl === lvl;
+                }).length;
+
+                const opt = document.createElement("option");
+                opt.value = lvl;
+                opt.textContent = `レベル ${lvl} (${count}語)`;
+                levelSelectEl.appendChild(opt);
+            });
+
+            // レベル選択連動のセクション更新を実行
+            onLevelChange();
+        }
+
+        // レベルが変更されたときにセクションの選択肢を絞り込む
+        function onLevelChange() {
+            const levelSelectEl = document.getElementById("levelSelect");
+            const sectionSelectEl = document.getElementById("sectionSelect");
+            const selectedLevel = levelSelectEl.value;
+
+            sectionSelectEl.innerHTML = "";
+
+            if (typeof wordList === 'undefined') return;
+
+            // 該当するセクションを収集
+            const sections = [];
+            wordList.forEach(item => {
+                const secStr = String(item.section);
+                const itemLvl = secStr.includes("-") ? secStr.split("-")[0] : secStr;
+
+                if (selectedLevel === "all" || itemLvl === selectedLevel) {
+                    if (!sections.includes(secStr)) {
+                        sections.push(secStr);
+                    }
+                }
+            });
+
+            sections.sort((a, b) => {
+                return String(a).localeCompare(String(b), 'ja', { numeric: true });
+            });
+
+            // 「このレベルのすべて」または「全体すべて」
+            const allSecOpt = document.createElement("option");
+            allSecOpt.value = "all_in_level";
+            allSecOpt.textContent = selectedLevel === "all" ? "すべてのセクション" : `レベル ${selectedLevel} のすべて`;
+            sectionSelectEl.appendChild(allSecOpt);
 
             sections.forEach(sec => {
+                const count = wordList.filter(item => String(item.section) === sec).length;
                 const opt = document.createElement("option");
                 opt.value = sec;
-                opt.textContent = `Level ${sec}`;
-                selectEl.appendChild(opt);
+                opt.textContent = `セクション ${sec} (${count}語)`;
+                sectionSelectEl.appendChild(opt);
             });
         }
 
@@ -308,17 +372,8 @@
             const savedLearned = localStorage.getItem('wordLearnedStatus');
             const savedReview = localStorage.getItem('wordReviewStatus');
             
-            if (savedLearned) {
-                try { learnedStatus = JSON.parse(savedLearned); } catch (e) { learnedStatus = {}; }
-            } else {
-                learnedStatus = {};
-            }
-
-            if (savedReview) {
-                try { reviewStatus = JSON.parse(savedReview); } catch (e) { reviewStatus = {}; }
-            } else {
-                reviewStatus = {};
-            }
+            learnedStatus = savedLearned ? JSON.parse(savedLearned) : {};
+            reviewStatus = savedReview ? JSON.parse(savedReview) : {};
 
             if (typeof wordList !== 'undefined') {
                 wordList.forEach((_, i) => {
@@ -336,6 +391,7 @@
         function startSession() {
             if (typeof wordList === 'undefined') return;
 
+            const selectedLevel = document.getElementById("levelSelect").value;
             const selectedSection = document.getElementById("sectionSelect").value;
             const selectedMode = document.getElementById("modeSelect").value;
 
@@ -343,9 +399,20 @@
             sessionResults = [];
 
             wordList.forEach((item, index) => {
-                const matchSection = (selectedSection === "all" || item.section === selectedSection);
-                let matchMode = false;
+                const secStr = String(item.section);
+                const itemLvl = secStr.includes("-") ? secStr.split("-")[0] : secStr;
 
+                // フィルタリング判定
+                let matchTarget = false;
+                if (selectedLevel === "all") {
+                    matchTarget = true;
+                } else if (selectedSection === "all_in_level") {
+                    matchTarget = (itemLvl === selectedLevel);
+                } else {
+                    matchTarget = (secStr === selectedSection);
+                }
+
+                let matchMode = false;
                 if (selectedMode === "all") {
                     matchMode = true;
                 } else if (selectedMode === "unlearned") {
@@ -354,7 +421,7 @@
                     matchMode = !learnedStatus[index] || reviewStatus[index];
                 }
 
-                if (matchSection && matchMode) {
+                if (matchTarget && matchMode) {
                     currentDeck.push(index);
                 }
             });
@@ -364,6 +431,7 @@
                 return;
             }
 
+            // シャッフル
             for (let i = currentDeck.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [currentDeck[i], currentDeck[j]] = [currentDeck[j], currentDeck[i]];
@@ -398,7 +466,7 @@
 
             textEl.textContent = item.en;
             exampleEl.innerHTML = "";
-            sectionEl.textContent = item.section;
+            sectionEl.textContent = `Sec: ${item.section}`;
             statusEl.textContent = `進捗: ${currentIndex + 1} / ${currentDeck.length} 枚目`;
         }
 
@@ -500,15 +568,4 @@
 
             const voices = window.speechSynthesis.getVoices();
             const englishVoice = voices.find(voice => voice.lang === 'en-US' || voice.lang === 'en_US');
-            if (englishVoice) {
-                utterance.voice = englishVoice;
-            }
-            speechSynthesis.speak(utterance);
-        }
-
-        window.onload = function() {
-            initSetup();
-        };
-    </script>
-</body>
-</html>
+            if (englishVoice
